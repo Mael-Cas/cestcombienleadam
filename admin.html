@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Administration du graphique</title>
+</head>
+<body>
+<h1>Administration du graphique</h1>
+
+<form>
+    <input id="timestamp" type="date" name="timestamp" required>
+    <input id="value" type="number" name="value" required>
+    <button type="submit" onclick="addData()">Ajouter</button>
+</form>
+
+<table border="1">
+    <thead>
+    <tr>
+        <th>Timestamp</th>
+        <th>Valeur</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- Les données seront chargées dynamiquement via JavaScript -->
+    </tbody>
+</table>
+
+<script>
+    async function fetchAdminData() {
+        const response = await fetch('/graph-data');
+        const data = await response.json();
+        const tableBody = document.querySelector('tbody');
+
+        data.forEach(entry => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+          <td>${new Date(entry.timestamp).toLocaleString()}</td>
+          <td>${entry.value}</td>
+          <td>
+            <button onclick="editData('${entry._id}')">Modifier</button>
+            <button onclick="deleteData('${entry._id}')">Supprimer</button>
+          </td>
+        `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    fetchAdminData();
+
+    async function addData(event) {
+        const timestamp = document.getElementById("timestamp").value;
+        const value = document.getElementById("value").value;
+
+
+
+        await fetch('/add-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ timestamp, value })
+        });
+
+        location.reload();
+    }
+
+    async function editData(id) {
+        // À implémenter si nécessaire
+    }
+
+    async function deleteData(id) {
+        await fetch(`/delete-data/${id}`, { method: 'DELETE' });
+        location.reload();
+    }
+</script>
+</body>
+</html>
