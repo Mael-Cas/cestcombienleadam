@@ -10,11 +10,11 @@
 
 </head>
 <body>
-<div style="display: flex; justify-content: center; align-items: center; font-family:'Luckiest Guy', cursive; font-weight: 400; font-style: normal  ">
+<div style="display: flex; justify-content: center; align-items: center; font-family:'Luckiest Guy', cursive; font-weight: 400; font-style: normal;">
     <h1>C'est combien le Adam ?</h1>
 </div>
 
-<div style="position: absolute; top: 50%; left: 50%;transform: translate(-50%, -50%); background-color: #f0f0f0; padding: 20px; width: 80%; height: 80%; border-radius: 25% 10%;">
+<div style="position: absolute; top: 50%; left: 50%;transform: translate(-50%, -50%); background-color: #f0f0f0; padding: 20px; width: 80%; height: 80%; border-radius: 25% 10%; margin-top: 50px;">
     <div style="width: 80%; height: 80%; position: absolute; top: 50%; left: 50%;transform: translate(-50%, -50%);">
         <canvas id="myChart"></canvas>
     </div>
@@ -23,11 +23,15 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+
+
     async function fetchdata() {
         const ctx = document.getElementById('myChart');
         const response = await fetch('/graph-data');
         const data = await response.json();
-        console.log(data);
+        let pointImage= new Image(50,65.3);
+        pointImage.src = "adam_head.ico";
+
 
 
         new Chart(ctx, {
@@ -36,14 +40,21 @@
                 labels: data.map(row => row.timestamp),
 
                 datasets: [{
-                    label: 'Valeur du Adam (en euro)',
+                    label: 'Valeur du Adam (en euros)',
                     data: data.map(row => row.value),
                     borderColor: 'rgba(58,123,213,1)', // Couleur vive
                     borderWidth: 1, // Épaisseur de la ligne
-                    radius: 0,
+                    radius: 3,
+                    fill: true,
+                    tension: 0.3,
+                    usePointStyle: true,
+                    pointStyle: pointImage,
                 }]
+
+
             },
             options: {
+
                 scales: {
                     y: {
                         beginAtZero: true

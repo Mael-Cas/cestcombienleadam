@@ -71,6 +71,11 @@ app.delete('/delete-data/:id', async (req, res) => {
 });
 
 
+app.get('/adam_head.ico', (req, res) => {
+    res.sendFile(__dirname+"/adam_head.ico");
+})
+
+
 
 app.listen(port, () => {
     console.log(`Serveur en cours d'exécution sur le port http://localhost:${port}`);
