@@ -8,7 +8,7 @@
 <h1>Administration du graphique</h1>
 
 <form>
-    <input id="timestamp" type="date" name="timestamp" required>
+
     <input id="value" type="number" name="value" required>
     <button type="submit" onclick="addData()">Ajouter</button>
 </form>
@@ -49,9 +49,21 @@
     fetchAdminData();
 
     async function addData(event) {
-        const timestamp = document.getElementById("timestamp").value;
-        const value = document.getElementById("value").value;
+        var today = new Date();
+        var dd = today.getDate();
+        var mm = today.getMonth() + 1;
+        var yyyy = today.getFullYear();
+        if (dd < 10) {
+            dd = '0' + dd;
+        }
+        if (mm < 10) {
+            mm = '0' + mm;
+        }
+        today = mm + '/' + dd + '/' + yyyy;
+        console.log(today);
 
+        const timestamp = today;
+        const value = document.getElementById("value").value;
 
 
         await fetch('/add-data', {
@@ -66,7 +78,30 @@
     }
 
     async function editData(id) {
-        // À implémenter si nécessaire
+        const newValue = await prompt("Nouvelle valeur :");
+
+        try {
+            const response = await fetch(`/edit/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ value: newValue }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                location.reload();
+                // Actualiser la liste des réservations ou effectuer d'autres actions si nécessaire
+            } else {
+                console.error(data.message);
+                // Gérer les erreurs en conséquence
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Erreur lors de la modification du commentaire', error);
+        }
     }
 
     async function deleteData(id) {

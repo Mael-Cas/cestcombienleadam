@@ -1,10 +1,10 @@
 const express = require('express');
 const app = express();
-const port = 3000;
+const port = 10005;
 
 // Configuration de MongoDB
 const mongoose = require('mongoose');
-mongoose.connect('mongodb://127.0.0.1:27017/graphDB');
+mongoose.connect(`mongodb://${process.env.DB_HOST}:27017/graphDB`);
 
 const getMain = require("./getMainHtml");
 const getAdmin = require("./getAdminhtml");
@@ -70,6 +70,19 @@ app.delete('/delete-data/:id', async (req, res) => {
     }
 });
 
+
+app.put('/edit/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const Value = req.body.value;
+        await GraphData.findByIdAndUpdate(id, {value: Value});
+        res.status(200).json({ message: 'Commentaire modifié avec succès' });
+
+    }catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Erreur lors de la modification du commentaire' });
+    }
+})
 
 app.get('/adam_head.ico', (req, res) => {
     res.sendFile(__dirname+"/adam_head.ico");
