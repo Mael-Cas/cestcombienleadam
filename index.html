@@ -7,7 +7,31 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <style>
+        /* Styles pour les lignes de saisie */
+        .input-dropdown {
+            text-align: center;
+            margin-top: 20px;
+            font-family: 'Luckiest Guy', cursive;
+        }
 
+        .input-dropdown select {
+            padding: 8px;
+            width: 200px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background-color: #fff;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .input-dropdown select:focus {
+            border-color: #5d9cec; /* Couleur de la bordure lorsqu'il est en focus */
+        }
+
+    </style>
 
 </head>
 <body>
@@ -19,12 +43,27 @@
     <div style="width: 80%; height: 80%; position: absolute; top: 50%; left: 50%;transform: translate(-50%, -50%);">
         <canvas id="myChart"></canvas>
     </div>
+
 </div>
+<div class="input-dropdown" style="position: absolute; top: calc(50% + 40vh); left: 50%; transform: translateX(-50%);">
+    <select id="valueChang">
+        <option value="1">Cinéma</option>
+        <option value="2">Aquarium</option>
+        <option value="3">Vélo</option>
+        <option value="4">Arc</option>
+        <option value="5">Crous</option>
+        <option value="6">Chapeles</option>
+        <!-- Ajoutez d'autres options pour d'autres devises si nécessaire -->
+    </select>
+</div>
+
+<!-- Ajout des deux lignes pour la saisie de montant et la liste déroulante -->
+
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-
+    let MyChart;
 
     async function fetchdata() {
         const ctx = document.getElementById('myChart');
@@ -35,7 +74,7 @@
 
 
 
-        new Chart(ctx, {
+        MyChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: data.map(row => row.timestamp),
@@ -50,6 +89,7 @@
                     tension: 0.3,
                     usePointStyle: true,
                     pointStyle: pointImage,
+                    pointHitRadius: 20,
                 }]
 
 
@@ -63,7 +103,51 @@
                 }
             }
         });
+
     }
+    async function updateChart() {
+        const response = await fetch('/graph-data');
+        const data = await response.json();
+        let avgPrice;
+        const value = document.getElementById('valueChang').value;
+        switch (value){
+            case '1':
+                avgPrice = 7.20;
+                break;
+            case '2':
+                avgPrice = 7;
+                break;
+            case '3':
+                avgPrice = 1000;
+                break;
+            case '4':
+                avgPrice = 1500;
+                break;
+            case '5':
+                avgPrice = 3.30
+                break;
+            case '6':
+                avgPrice = 10;
+                break;
+            default:
+                avgPrice = 1;
+                break;
+        }
+        console.log(avgPrice);
+        // Mettre à jour les données du graphique
+        MyChart.data.labels = data.map(row => row.timestamp);
+        MyChart.data.datasets[0].data = data.map(row => row.value/avgPrice);
+
+        // Mettre à jour le graphique
+        MyChart.update();
+    }
+
+    document.getElementById('valueChang').addEventListener('change', ()=>{
+
+        updateChart();
+    })
+
+
     fetchdata();
 
 </script>
