@@ -4,7 +4,7 @@ const port = 10005;
 
 // Configuration de MongoDB
 const mongoose = require('mongoose');
-mongoose.connect(`mongodb://${process.env.DB_HOST}:27017/graphDB`);
+mongoose.connect(`mongodb://127.0.0.1:27017/graphDB`);
 
 const getMain = require("./getMainHtml");
 const getAdmin = require("./getAdminhtml");
