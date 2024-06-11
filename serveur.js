@@ -1,95 +1,97 @@
 const express = require('express');
-const app = express();
-const port = 10005;
-
-// Configuration de MongoDB
+const path = require('path');
+const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-mongoose.connect(`mongodb://${process.env.DB_HOST}:27017/graphDB`);
+const getMainHtml = require('./getMainHtml');
+const getAdminhtml = require('./getAdminhtml');
 
-const getMain = require("./getMainHtml");
-const getAdmin = require("./getAdminhtml");
-
-// Définition du schéma MongoDB
-const graphSchema = new mongoose.Schema({
-    timestamp: String,
-    value: Number
-});
-const GraphData = mongoose.model('GraphData', graphSchema);
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 // Middleware pour analyser les corps de requête JSON
-app.use(express.json());
+app.use(bodyParser.json());
 
+// Servir les fichiers statiques
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.get("/", async (req, res) => {
-    const mian = await getMain();
-    res.send(mian);
-})
-// Route pour récupérer les données du graphique
+mongoose.connect('mongodb://localhost:27017/votre_base_de_donnees', { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.log('Erreur de connexion MongoDB:', err));
+
+const DataSchema = new mongoose.Schema({
+    timestamp: { type: Date, default: Date.now },
+    value: Number
+});
+
+const Data = mongoose.model('Data', DataSchema);
+
+app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'adam_head.ico')));
+
 app.get('/graph-data', async (req, res) => {
     try {
-        const data = await GraphData.find();
-
+        const data = await Data.find({});
         res.json(data);
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error('Erreur serveur lors de la récupération des données:', error);
         res.status(500).send('Erreur serveur');
     }
 });
 
-// Route pour l'interface d'administration
-app.get('/admin', async (req, res) => {
-    const admin = await getAdmin();
-    res.send(admin);
+app.post('/add-data', async (req, res) => {
+    const { timestamp, value } = req.body;
+    try {
+        const newData = new Data({ timestamp, value });
+        await newData.save();
+        res.status(201).json(newData);
+    } catch (error) {
+        console.error('Erreur serveur lors de l\'ajout de données:', error);
+        res.status(500).send('Erreur serveur');
+    }
 });
 
-// Route pour ajouter des données au graphique
-app.post('/add-data', async (req, res) => {
+app.put('/edit/:id', async (req, res) => {
+    const { id } = req.params;
+    const { value } = req.body;
     try {
-        const { timestamp, value } = req.body;
-        console.log(value);
-        const newData = new GraphData({
-            timestamp: timestamp,
-            value: value
-        });
-        await newData.save();
-        res.status(201).send('Données ajoutées avec succès');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Erreur serveur lors de l\'ajout des données');
+        const updatedData = await Data.findByIdAndUpdate(id, { value }, { new: true });
+        res.json(updatedData);
+    } catch (error) {
+        console.error('Erreur serveur lors de la modification de données:', error);
+        res.status(500).send('Erreur serveur');
     }
 });
 
 app.delete('/delete-data/:id', async (req, res) => {
+    const { id } = req.params;
     try {
-        const { id } = req.params;
-        await GraphData.findByIdAndDelete(id);
-        res.status(200).send('Données supprimées avec succès');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Erreur serveur lors de la suppression des données');
+        await Data.findByIdAndDelete(id);
+        res.status(204).send();
+    } catch (error) {
+        console.error('Erreur serveur lors de la suppression de données:', error);
+        res.status(500).send('Erreur serveur');
     }
 });
 
-
-app.put('/edit/:id', async (req, res) => {
+app.get('/', async (req, res) => {
     try {
-        const id = req.params.id;
-        const Value = req.body.value;
-        await GraphData.findByIdAndUpdate(id, {value: Value});
-        res.status(200).json({ message: 'Commentaire modifié avec succès' });
-
-    }catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Erreur lors de la modification du commentaire' });
+        const content = await getMainHtml();
+        res.send(content);
+    } catch (error) {
+        console.error('Erreur serveur lors de la récupération du fichier HTML principal:', error);
+        res.status(500).send('Erreur serveur');
     }
-})
+});
 
-app.get('/adam_head.ico', (req, res) => {
-    res.sendFile(__dirname+"/adam_head.ico");
-})
+app.get('/admin', async (req, res) => {
+    try {
+        const content = await getAdminhtml();
+        res.send(content);
+    } catch (error) {
+        console.error('Erreur serveur lors de la récupération du fichier HTML admin:', error);
+        res.status(500).send('Erreur serveur');
+    }
+});
 
-
-
-app.listen(port, () => {
-    console.log(`Serveur en cours d'exécution sur le port http://localhost:${port}`);
+app.listen(PORT, () => {
+    console.log(`Server is running on port http://localhost:${PORT}/`);
 });

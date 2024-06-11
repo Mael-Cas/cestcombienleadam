@@ -3,153 +3,230 @@
 <head>
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow">
-    <title>Graphique de bourse</title>
+    <title>C'est combien le Adam ?</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cactus+Classical+Serif&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
     <style>
-        /* Styles pour les lignes de saisie */
-        .input-dropdown {
-            text-align: center;
-            margin-top: 20px;
-            font-family: 'Luckiest Guy', cursive;
+        canvas {
+            width: 100%;
+            height: 500px;
         }
-
-        .input-dropdown select {
-            padding: 8px;
-            width: 200px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-            box-sizing: border-box;
-            background-color: #fff;
-            cursor: pointer;
-            outline: none;
-        }
-
-        .input-dropdown select:focus {
-            border-color: #5d9cec; /* Couleur de la bordure lorsqu'il est en focus */
-        }
-
     </style>
-
 </head>
 <body>
-<div style="display: flex; justify-content: center; align-items: center; font-family:'Luckiest Guy', cursive; font-weight: 400; font-style: normal;">
+<header>
+    <img src="adam_head.ico" alt="Icon" class="header-icon">
     <h1>C'est combien le Adam ?</h1>
-</div>
-
-<div style="position: absolute; top: 50%; left: 50%;transform: translate(-50%, -50%); background-color: #f0f0f0; padding: 20px; width: 80%; height: 80%; border-radius: 25% 10%; margin-top: 50px;">
-    <div style="width: 80%; height: 80%; position: absolute; top: 50%; left: 50%;transform: translate(-50%, -50%);">
-        <canvas id="myChart"></canvas>
+</header>
+<div class="container">
+    <h2>Le prix d'un Adam :</h2>
+    <div class="chart-container">
+        <canvas id="myCanvas"></canvas>
+        <div id="tooltip" class="tooltip"></div>
     </div>
-
+    <div class="input-dropdown">
+        <select id="valueChang">
+            <option value="0">Euro</option>
+            <option value="1">Cinéma</option>
+            <option value="2">Aquarium</option>
+            <option value="3">Vélo</option>
+            <option value="4">Arc</option>
+            <option value="5">Crous</option>
+            <option value="6">Chapeles</option>
+        </select>
+    </div>
 </div>
-<div class="input-dropdown" style="position: absolute; top: calc(50% + 40vh); left: 50%; transform: translateX(-50%);">
-    <select id="valueChang">
-        <option value="0">Adam</option>
-        <option value="1">Cinéma</option>
-        <option value="2">Aquarium</option>
-        <option value="3">Vélo</option>
-        <option value="4">Arc</option>
-        <option value="5">Crous</option>
-        <option value="6">Chapeles</option>
-        <!-- Ajoutez d'autres options pour d'autres devises si nécessaire -->
-    </select>
-</div>
-
-<!-- Ajout des deux lignes pour la saisie de montant et la liste déroulante -->
-
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<footer>
+    &copy; 2024 - C'est combien le Adam ? Tous droits réservés.
+</footer>
 
 <script>
-    let MyChart;
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    const tooltip = document.getElementById('tooltip');
+    let unit = 'Euro';
 
-    async function fetchdata() {
-        const ctx = document.getElementById('myChart');
+    // Load the icon image
+    const iconImage = new Image();
+    iconImage.src = 'adam_head.ico';
+
+    // Adjust canvas size for HiDPI displays
+    function resizeCanvas() {
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        ctx.scale(ratio, ratio);
+    }
+
+    async function fetchData() {
         const response = await fetch('/graph-data');
         const data = await response.json();
-        let pointImage= new Image(50,65.3);
-        pointImage.src = "adam_head.ico";
+        return data.map(row => ({
+            timestamp: new Date(row.timestamp),
+            value: row.value
+        }));
+    }
 
+    function addTodayData(data) {
+        const today = new Date();
+        const existingTodayData = data.find(d => d.timestamp.toDateString() === today.toDateString());
 
+        if (!existingTodayData) {
+            // Add today's data if it doesn't exist
+            const newValue = Math.random() * 100 + 1; // Example value, you can change this logic
+            data.push({
+                timestamp: today,
+                value: newValue
+            });
+        }
 
-        MyChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: data.map(row => row.timestamp),
+        return data;
+    }
 
-                datasets: [{
-                    label: 'Valeur du Adam (en euros)',
-                    data: data.map(row => row.value),
-                    borderColor: 'rgba(58,123,213,1)', // Couleur vive
-                    borderWidth: 1, // Épaisseur de la ligne
-                    radius: 3,
-                    fill: true,
-                    tension: 0.3,
-                    usePointStyle: true,
-                    pointStyle: pointImage,
-                    pointHitRadius: 20,
-                }]
+    function drawGraph(data) {
+        resizeCanvas();
+        const width = canvas.width / (window.devicePixelRatio || 1);
+        const height = canvas.height / (window.devicePixelRatio || 1);
+        const padding = 60;
+        const axisColor = '#000';
+        const lineColor = '#D4AF37';
+        const fillColor = 'rgba(212, 175, 55, 0.3)'; // Gold color with opacity
 
+        ctx.clearRect(0, 0, width, height);
 
-            },
-            options: {
+        const maxValue = Math.max(...data.map(d => d.value));
+        const minValue = 0;  // Force the minimum value to 0
+        const timeRange = data[data.length - 1].timestamp - data[0].timestamp;
 
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
+        // Draw axes
+        ctx.strokeStyle = axisColor;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding, padding);
+        ctx.lineTo(padding, height - padding);
+        ctx.lineTo(width - padding, height - padding);
+        ctx.stroke();
+
+        // Draw y-axis labels
+        const yLabels = 5;
+        ctx.font = '14px Arial';
+        ctx.fillStyle = axisColor;
+        for (let i = 0; i <= yLabels; i++) {
+            const yValue = minValue + (i * (maxValue - minValue) / yLabels);
+            const y = height - padding - (i * (height - 2 * padding) / yLabels);
+            ctx.fillText(yValue.toFixed(2) + ' ' + unit, padding - 50, y + 3);
+            ctx.strokeStyle = '#eaeaea';
+            ctx.beginPath();
+            ctx.moveTo(padding, y);
+            ctx.lineTo(width - padding, y);
+            ctx.stroke();
+        }
+
+        // Draw x-axis labels
+        const xLabels = 5;
+        for (let i = 0; i <= xLabels; i++) {
+            const xValue = new Date(data[0].timestamp.getTime() + (i * timeRange / xLabels));
+            const x = padding + (i * (width - 2 * padding) / xLabels);
+            ctx.fillText(xValue.toLocaleDateString(), x - 30, height - padding + 40);
+            ctx.strokeStyle = '#eaeaea';
+            ctx.beginPath();
+            ctx.moveTo(x, height - padding);
+            ctx.lineTo(x, padding);
+            ctx.stroke();
+        }
+
+        // Draw data
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(padding, height - padding - ((data[0].value - minValue) / (maxValue - minValue)) * (height - 2 * padding));
+        data.forEach(point => {
+            const x = padding + ((point.timestamp - data[0].timestamp) / timeRange) * (width - 2 * padding);
+            const y = height - padding - ((point.value - minValue) / (maxValue - minValue)) * (height - 2 * padding);
+            ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        // Fill under the line
+        ctx.lineTo(width - padding, height - padding);
+        ctx.lineTo(padding, height - padding);
+        ctx.closePath();
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+
+        // Draw points with icon
+        data.forEach(point => {
+            const x = padding + ((point.timestamp - data[0].timestamp) / timeRange) * (width - 2 * padding);
+            const y = height - padding - ((point.value - minValue) / (maxValue - minValue)) * (height - 2 * padding);
+            ctx.drawImage(iconImage, x - 25, y - 25, 50, 50);
+            point.canvasX = x;
+            point.canvasY = y;
         });
 
+        canvas.dataPoints = data;
     }
-    async function updateChart() {
-        const response = await fetch('/graph-data');
-        const data = await response.json();
-        let avgPrice;
-        const value = document.getElementById('valueChang').value;
-        switch (value){
-            case '1':
-                avgPrice = 7.20;
-                break;
-            case '2':
-                avgPrice = 7;
-                break;
-            case '3':
-                avgPrice = 1000;
-                break;
-            case '4':
-                avgPrice = 1500;
-                break;
-            case '5':
-                avgPrice = 3.30
-                break;
-            case '6':
-                avgPrice = 10;
-                break;
-            default:
-                avgPrice = 1;
-                break;
+
+    function showTooltip(event) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        const radius = 15;
+
+        for (const point of canvas.dataPoints) {
+            const dist = Math.sqrt(Math.pow(mouseX - point.canvasX, 2) + Math.pow(mouseY - point.canvasY, 2));
+            if (dist < radius) {
+                tooltip.style.display = 'block';
+                tooltip.style.left = `${event.clientX - 140}px`;
+                tooltip.style.top = `${event.clientY - 300}px`;
+                tooltip.innerHTML = `${unit}: ${point.value.toFixed(2)}<br>Temps: ${point.timestamp.toLocaleString()}`;
+                return;
+            }
         }
-        console.log(avgPrice);
-        // Mettre à jour les données du graphique
-        MyChart.data.labels = data.map(row => row.timestamp);
-        MyChart.data.datasets[0].data = data.map(row => row.value/avgPrice);
 
-        // Mettre à jour le graphique
-        MyChart.update();
+        tooltip.style.display = 'none';
     }
 
-    document.getElementById('valueChang').addEventListener('change', ()=>{
 
-        updateChart();
-    })
+    function getUnitValue(value) {
+        switch (value) {
+            case '1':
+                return { unit: 'Cinéma', factor: 7.20 };
+            case '2':
+                return { unit: 'Aquarium', factor: 7.00 };
+            case '3':
+                return { unit: 'Vélo', factor: 1000 };
+            case '4':
+                return { unit: 'Arc', factor: 1500 };
+            case '5':
+                return { unit: 'Crous', factor: 3.30 };
+            case '6':
+                return { unit: 'Chapeles', factor: 10 };
+            default:
+                return { unit: 'Euro', factor: 1 };
+        }
+    }
 
+    async function updateGraph() {
+        const value = document.getElementById('valueChang').value;
+        const unitValue = getUnitValue(value);
+        unit = unitValue.unit;
+        let data = await fetchData();
+        data.forEach(point => {
+            point.value /= unitValue.factor;
+        });
+        data = addTodayData(data);
+        drawGraph(data);
+    }
 
-    fetchdata();
+    window.addEventListener('resize', updateGraph);
+    document.getElementById('valueChang').addEventListener('change', updateGraph);
+    canvas.addEventListener('mousemove', showTooltip);
+
+    // Update graph when icon image is loaded
+    iconImage.onload = updateGraph;
 
 </script>
 </body>
